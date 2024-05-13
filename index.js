@@ -5,7 +5,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
-const { ObjectID, ServerApiVersion } = require("mongodb");
+const { ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ozftyhw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 app.use(cors());
@@ -105,11 +105,10 @@ async function run() {
         });
 
         app.delete("/deleteService/:id", (req, res) => {
-          serviceCollection
-            .deleteOne({ _id: ObjectID(req.params.id) })
-            .then((result) => {
-              res.send(result.acknowledged);
-            });
+          const queryId = new ObjectId(req.params.id);
+          serviceCollection.deleteOne({ _id: queryId }).then((result) => {
+            res.send(result.acknowledged);
+          });
         });
 
         app.get("/getOrder", async (req, res) => {
@@ -136,14 +135,17 @@ async function run() {
 
         app.get("/orderedProduct/:id", async (req, res) => {
           try {
+            const queryId = new ObjectId(req.params.id);
             const documents = await productCollection
-              .find({ _id: ObjectID(req.params.id) })
+              .find({ _id: queryId })
               .toArray();
+
+            console.log(documents);
 
             if (documents.length === 0) {
               try {
                 const appointmentDocuments = await appointmentCollection
-                  .find({ _id: ObjectID(req.params.id) })
+                  .find({ _id: queryId })
                   .toArray();
                 res.status(200).send(appointmentDocuments[0]);
               } catch (error) {
@@ -153,6 +155,7 @@ async function run() {
               res.status(200).send(documents[0]);
             }
           } catch (error) {
+            console.log(error);
             res.status(500).send("Internal Server Error");
           }
         });
@@ -192,9 +195,10 @@ async function run() {
           }
         });
         app.patch("/updateStatus/:id", (req, res) => {
+          const queryId = new ObjectId(req.params.id);
           orderCollection
             .updateOne(
-              { _id: ObjectID(req.params.id) },
+              { _id: queryId },
               {
                 $set: { status: req.body.newStatus },
               }
@@ -202,7 +206,7 @@ async function run() {
             .then((result) => {
               if (result.modifiedCount === 0) {
                 bookingAppointmentCollection.updateOne(
-                  { _id: ObjectID(req.params.id) },
+                  { _id: queryId },
                   {
                     $set: { status: req.body.newStatus },
                   }
