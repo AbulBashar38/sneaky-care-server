@@ -64,7 +64,6 @@ async function run() {
 
         app.post("/addOrder", (req, res) => {
           orderCollection.insertOne(req.body).then((result) => {
-            console.log(result);
             res.send(result.acknowledged);
           });
         });
@@ -86,7 +85,7 @@ async function run() {
 
         app.get("/appointments", async (req, res) => {
           try {
-            const documents = await appointmentCollection.find().toArray();
+            const documents = await appointmentCollection.find({}).toArray();
             res.status(200).send(documents);
           } catch (error) {
             res.status(500).send("Internal Server Error");
@@ -140,8 +139,6 @@ async function run() {
               .find({ _id: queryId })
               .toArray();
 
-            console.log(documents);
-
             if (documents.length === 0) {
               try {
                 const appointmentDocuments = await appointmentCollection
@@ -194,27 +191,31 @@ async function run() {
             res.status(500).send("Internal Server Error");
           }
         });
-        app.patch("/updateStatus/:id", (req, res) => {
-          const queryId = new ObjectId(req.params.id);
-          orderCollection
-            .updateOne(
+        app.patch("/updateStatus/:id", async (req, res) => {
+          console.log("hi");
+          try {
+            const queryId = new ObjectId(req.params.id);
+            const result = await orderCollection.updateOne(
               { _id: queryId },
               {
                 $set: { status: req.body.newStatus },
               }
-            )
-            .then((result) => {
-              if (result.modifiedCount === 0) {
-                bookingAppointmentCollection.updateOne(
+            );
+            if (result.modifiedCount === 0) {
+              const bookingUpdate =
+                await bookingAppointmentCollection.updateOne(
                   { _id: queryId },
                   {
                     $set: { status: req.body.newStatus },
                   }
                 );
-              } else {
-                res.send(result.modifiedCount > 0);
-              }
-            });
+              res.send(bookingUpdate.acknowledged);
+            } else {
+              res.send(result.acknowledged);
+            }
+          } catch (error) {
+            res.status(500).send("Internal Server Error");
+          }
         });
       })
       .catch((err) => {
