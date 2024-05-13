@@ -114,7 +114,7 @@ async function run() {
         app.get("/getOrder", async (req, res) => {
           try {
             const documents = await orderCollection
-              .find({ adminEmail: req.query.email })
+              .find({ adminEmail: req.params.email })
               .toArray();
             res.status(200).send(documents);
           } catch (error) {
@@ -125,7 +125,7 @@ async function run() {
         app.get("/getAppointment", async (req, res) => {
           try {
             const documents = await bookingAppointmentCollection
-              .find({ adminEmail: req.query.email })
+              .find({ adminEmail: req.params.email })
               .toArray();
             res.status(200).send(documents);
           } catch (error) {
